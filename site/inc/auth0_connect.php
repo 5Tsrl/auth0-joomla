@@ -28,19 +28,16 @@ class Auth0Connect {
 
     public function getAccessToken ($code) {
 
-        $body = array(
-            'client_id' => $this->clientId,
-            'redirect_uri' => $this->redirectURL,
-            'client_secret' => $this->clientSecret,
-            'code' => $code,
-            'grant_type' => 'authorization_code'
-        );
-
         $headers = array(
-            'content-type' => 'application/x-www-form-urlencoded'
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+            'audience' => $this->domain . '/api/v2/',
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'content-type' => 'content-type: application/json'
         );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $body, $headers);
+        $response = $this->http->post($this->domain . '/oauth/token', $headers);
 
         $data = json_decode( $response->body );
 
@@ -53,7 +50,17 @@ class Auth0Connect {
 
     public function getUserInfo($accessToken) {
 
-        $userData = $this->http->get($this->domain . '/userinfo/?access_token=' . $accessToken);
+        $headers = array(
+            "authorization" => "Bearer ".$accessToken,
+            "cache-control" => "no-cache",
+            "content-type" => "application/json; charset=utf-8"
+        );
+
+        $email = "";
+
+        //$userData = $this->http->get($this->domain . '/userinfo/?access_token=' . $accessToken);
+        //$userData = $this->http->get($this->domain . '/api/v2/users-by-email?email='.$email, $headers);
+        $userData = $this->http->get($this->domain . '/api/v2/users', $headers);
         $userInfo = json_decode( $userData->body );
 
         return $userInfo;
@@ -64,16 +71,15 @@ class Auth0Connect {
 
     public function getToken($grantType = 'client_credentials')
     {
-        $body = array(
+        $headers = array(
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
-            'grant_type' => $grantType
-        );
-        $headers = array(
-            'content-type' => 'application/x-www-form-urlencoded'
+            'audience' => $this->domain . '/api/v2/',
+            'grant_type' => $grantType,
+            'content-type' => 'content-type: application/json'
         );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $body, $headers);
+        $response = $this->http->post($this->domain . '/oauth/token', $headers);
 
         $data = json_decode( $response->body );
 
