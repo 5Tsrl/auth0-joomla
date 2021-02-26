@@ -28,7 +28,7 @@ class Auth0Connect {
 
     public function getAccessToken ($code) {
 
-        $headers = array(
+        $body = array(
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'audience' => $this->domain . '/api/v2/',
@@ -37,7 +37,7 @@ class Auth0Connect {
             'content-type' => 'content-type: application/json'
         );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $headers);
+        $response = $this->http->post($this->domain . '/oauth/token', $body);
 
         $data = json_decode( $response->body );
 
@@ -50,17 +50,15 @@ class Auth0Connect {
 
     public function getUserInfo($accessToken) {
 
-        $headers = array(
+        $body = array(
             "authorization" => "Bearer ".$accessToken,
+            'audience' => $this->domain . '/api/v2/',
             "cache-control" => "no-cache",
             "content-type" => "application/json; charset=utf-8"
         );
 
-        $email = "";
-
         //$userData = $this->http->get($this->domain . '/userinfo/?access_token=' . $accessToken);
-        //$userData = $this->http->get($this->domain . '/api/v2/users-by-email?email='.$email, $headers);
-        $userData = $this->http->get($this->domain . '/api/v2/users', $headers);
+        $userData = $this->http->get($this->domain . '/api/v2/users', $body);
         $userInfo = json_decode( $userData->body );
 
         return $userInfo;
@@ -71,7 +69,7 @@ class Auth0Connect {
 
     public function getToken($grantType = 'client_credentials')
     {
-        $headers = array(
+        $body = array(
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'audience' => $this->domain . '/api/v2/',
@@ -79,7 +77,7 @@ class Auth0Connect {
             'content-type' => 'content-type: application/json'
         );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $headers);
+        $response = $this->http->post($this->domain . '/oauth/token', $body);
 
         $data = json_decode( $response->body );
 
