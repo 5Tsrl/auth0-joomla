@@ -15,6 +15,8 @@ class Auth0Connect {
     protected $clientSecret;
     protected $redirectURL;
     protected $http;
+    protected $curl;
+
 
     public function __construct($domain, $clientId, $clientSecret, $redirectURL) {
 
@@ -23,6 +25,7 @@ class Auth0Connect {
         $this->clientSecret = $clientSecret;
         $this->redirectURL = $redirectURL;
         $this->http = new JHttp();
+        $this->curl = curl_init();
 
     }
 
@@ -30,16 +33,33 @@ class Auth0Connect {
 
         $body = array(
             'client_id' => $this->clientId,
+            'redirect_uri' => $this->redirectURL,
             'client_secret' => $this->clientSecret,
-            'audience' => $this->domain . '/api/v2/',
-            'grant_type' => 'authorization_code',
             'code' => $code,
-            'content-type' => 'content-type: application/json'
+            'grant_type' => 'authorization_code'
         );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $body);
+        $headers = array(
+            "content-type: application/json"
+            //'content-type' => 'application/x-www-form-urlencoded'
+        );
 
-        $data = json_decode( $response->body );
+        curl_setopt_array($this->curl, array(
+            CURLOPT_URL => $this->domain . '/oauth/token',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($body),
+            CURLOPT_HTTPHEADER => $headers,
+          ));
+        $response = curl_exec($this->curl);
+
+        // $response = $this->http->post($this->domain . '/oauth/token', $body, $headers);
+
+        $data = json_decode( $response );
 
         if (isset($data->access_token)) {
             return $data->access_token;
@@ -50,16 +70,22 @@ class Auth0Connect {
 
     public function getUserInfo($accessToken) {
 
-        $body = array(
-            "authorization" => "Bearer ".$accessToken,
-            'audience' => $this->domain . '/api/v2/',
-            "cache-control" => "no-cache",
-            "content-type" => "application/json; charset=utf-8"
-        );
+        curl_setopt_array($this->curl, array(
+            CURLOPT_URL => $this->domain . '/userinfo/?access_token=' . $accessToken,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            // CURLOPT_POSTFIELDS => json_encode($body),
+            // CURLOPT_HTTPHEADER => $headers,
+          ));
+        $response = curl_exec($this->curl);
 
-        //$userData = $this->http->get($this->domain . '/userinfo/?access_token=' . $accessToken);
-        $userData = $this->http->get($this->domain . '/api/v2/users', $body);
-        $userInfo = json_decode( $userData->body );
+        // $userData = $this->http->get($this->domain . '/userinfo/?access_token=' . $accessToken);
+        $userData = $response;
+        $userInfo = json_decode( $userData );
 
         return $userInfo;
 
@@ -68,18 +94,32 @@ class Auth0Connect {
 
 
     public function getToken($grantType = 'client_credentials')
-    {
+    {   
         $body = array(
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
-            'audience' => $this->domain . '/api/v2/',
             'grant_type' => $grantType,
-            'content-type' => 'content-type: application/json'
+            'audience' => $this->domain.'/api/v2/',
         );
+        $headers = array(
+            "content-type: application/json"
+        );
+        curl_setopt_array($this->curl, array(
+            CURLOPT_URL => $this->domain . '/oauth/token',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($body),
+            CURLOPT_HTTPHEADER => $headers,
+          ));
+        $response = curl_exec($this->curl);
+        // $response = $this->http->post($this->domain . '/oauth/token', json_encode($body, JSON_UNESCAPED_SLASHES), $headers);
+        // die( $response );
 
-        $response = $this->http->post($this->domain . '/oauth/token', $body);
-
-        $data = json_decode( $response->body );
+        $data = json_decode( $response );
 
         if (isset($data->access_token)) {
             return $data->access_token;
